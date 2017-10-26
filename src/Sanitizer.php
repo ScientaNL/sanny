@@ -25,16 +25,15 @@ class Sanitizer
 		$contents = str_replace(["<o:p>", "</o:p>"], ["<span>", "</span>"], $contents);
 
 		$document = new \DomDocument('1.0', 'UTF-8');
-		$document->preserveWhiteSpace = false;
-		$document->formatOutput = true;
 		$document->substituteEntities  = false;
 		@$document->loadHTML(
 			'<?xml encoding="UTF-8"><html><body><section>'.$contents.'</section></body></html>'
 		);
 
 		$container = $document->getElementsByTagName("body")->item(0)->childNodes->item(0);
+		$document->normalizeDocument();
 
-		$this->walkDOM($container, $document, true);
+		$this->walkDOM($container, $document);
 
 		$contents = $document->saveHTML();
 
@@ -51,6 +50,7 @@ class Sanitizer
 			"quiet" => true,
 			"output-xhtml" => true,
 			"preserve-entities" => true,
+			"vertical-space" => false,
 			"show-body-only" => true,
 			"wrap" => false,
 		]);
@@ -58,8 +58,7 @@ class Sanitizer
 		return $formatter->format($contents);
 
 	}
-
-	private function walkDOM(\DOMElement $element, \DOMDocument $document, bool $isContainerElement = false)
+	private function walkDOM(\DOMElement $element, \DOMDocument $document, int $depth = 0)
 	{
 		$childNodes = $element->childNodes;
 
@@ -67,13 +66,13 @@ class Sanitizer
 			$childNode = $childNodes->item($i);
 
 			if ($childNode instanceof \DOMElement) {
-				$this->walkDOM($childNode, $document);
+				$this->walkDOM($childNode, $document, $depth+1);
 			} elseif ($childNode instanceof \DOMComment) {
 				$this->removeNode($childNode);
 			}
 		}
 
-		if(!$isContainerElement) {
+		if($depth > 0) {
 			$this->parseElement($element, $document);
 		}
 
