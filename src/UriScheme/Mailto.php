@@ -16,8 +16,8 @@ class Mailto extends AbstractUri
 			&& $this->authority === null
 			&& $this->host === null
 			&& $this->port === null
-			&& (\filter_var($this->path, \FILTER_SANITIZE_EMAIL) === $this->path)
-			&& (\filter_var($this->query, \FILTER_SANITIZE_URL) === $this->query)
+			&& (\filter_var($this->path, \FILTER_SANITIZE_EMAIL) == $this->path)
+			&& (\filter_var($this->query, \FILTER_SANITIZE_URL) == $this->query)
 			&& $this->fragment === null;
 	}
 }

@@ -4,6 +4,7 @@ namespace Syslogic\Sanny\AttributeEvaluator;
 
 use Sabberworm\CSS\OutputFormat;
 use Sabberworm\CSS\Parser;
+use Sabberworm\CSS\Parsing\SourceException;
 use Sabberworm\CSS\Rule\Rule;
 use Sabberworm\CSS\RuleSet\DeclarationBlock;
 
@@ -15,6 +16,8 @@ class StyleWhiteListEvaluator implements AttributeEvaluatorInterface
 	private $allowImportant = false;
 
 	private $cache = [];
+
+	private $callbacks = [];
 
 	public function __construct(array $rulesWhitelist, bool $allowImportant = false)
 	{
@@ -28,21 +31,33 @@ class StyleWhiteListEvaluator implements AttributeEvaluatorInterface
 			return $this->cache[$value];
 		}
 
-		$parser = new Parser("containert { $value }");
-		$css = $parser->parse();
+		try {
+			$parser = new Parser("containert { $value }");
+			$css = $parser->parse();
+
+		} catch (SourceException $e) {
+			return $this->cache[$value] = false;
+		}
+
 		$ruleSets = $css->getAllRuleSets();
 
 		if (count($ruleSets) !== 1) {
-			return false;
+			return $this->cache[$value] = false;
 		}
 
-		/** @var DeclarationBlock $ruleSet */
-		$ruleSet = $ruleSets[0];
+		/**
+		 * @var DeclarationBlock[] $ruleSets
+		 * @var Rule[] $rules
+		 */
+		$rules = $ruleSets[0]->getRulesAssoc();
+
+		//Call callbacks
+		foreach ($this->callbacks as $callback) {
+			$callback($rules);
+		}
 
 		$allowedRules = [];
-		/** @var Rule $rule */
-		foreach ($ruleSet->getRules() as $rule) {
-
+		foreach ($rules as $rule) {
 			if($this->ruleIsAllowed($rule) === true) {
 				$allowedRules[] = $rule->render(self::getOutputFormat());
 			}
@@ -77,5 +92,9 @@ class StyleWhiteListEvaluator implements AttributeEvaluatorInterface
 		}
 
 		return self::$outputFormat;
+	}
+
+	public function addCallback(callable $callback) {
+		$this->callbacks[] = $callback;
 	}
 }

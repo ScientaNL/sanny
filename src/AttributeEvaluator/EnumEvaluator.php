@@ -8,11 +8,16 @@ class EnumEvaluator implements AttributeEvaluatorInterface
 
 	public function __construct(array $allowedValues)
 	{
-		$this->allowedValues = $allowedValues;
+		$this->allowedValues = array_map(
+			function ($value) {
+				return strtolower($value);
+			},
+			$allowedValues
+		);
 	}
 
 	public function __invoke(string $value)
 	{
-		return in_array(trim($value), $this->allowedValues) ? $value : false;
+		return in_array(strtolower(trim($value)), $this->allowedValues) ? $value : false;
 	}
 }
