@@ -1,0 +1,178 @@
+<?php
+
+namespace Syslogic\Sanny;
+
+use Syslogic\Sanny\Exception\UnwantedElementException;
+
+class Sanitizer
+{
+	/** @var SanitizationConfig */
+	private $config;
+
+	public function __construct(SanitizationConfig $config)
+	{
+		$this->config = $config;
+	}
+
+	public function sanitize(string $contents): string
+	{
+		$contents = $this->transformEntitiesToPlaceholders($contents);
+
+		//Strip paragraphs in headings
+		$contents = preg_replace('%(<h[1-6]>\\s*?)<p>([^<]*?)</p>(\\s*?</h[1-6]>)%', '\\1\\2\\3', $contents);
+
+		//Replace word-tags
+		$contents = str_replace(["<o:p>", "</o:p>"], ["<span>", "</span>"], $contents);
+
+		$document = new \DomDocument('1.0', 'UTF-8');
+		$document->preserveWhiteSpace = false;
+		$document->formatOutput = true;
+		$document->substituteEntities  = false;
+		@$document->loadHTML(
+			'<?xml encoding="UTF-8"><html><body><section>'.$contents.'</section></body></html>'
+		);
+
+		$container = $document->getElementsByTagName("body")->item(0)->childNodes->item(0);
+
+		$this->walkDOM($container, $document, true);
+
+		$contents = $document->saveHTML();
+
+		$contents = substr(
+			$contents,
+			($start = strpos($contents, "<section>") + 9),
+			strrpos($contents, "</section>") - $start
+		);
+
+		$contents = $this->transformPlaceholdersToEntities($contents);
+
+		$formatter = new Formatter([
+			"indent" => $this->config->getIndent() ? "auto" : false,
+			"quiet" => true,
+			"output-xhtml" => true,
+			"preserve-entities" => true,
+			"show-body-only" => true,
+			"wrap" => false,
+		]);
+
+		return $formatter->format($contents);
+
+	}
+
+	private function walkDOM(\DOMElement $element, \DOMDocument $document, bool $isContainerElement = false)
+	{
+		$childNodes = $element->childNodes;
+
+		for ($i = $childNodes->length; --$i >= 0;) {
+			$childNode = $childNodes->item($i);
+
+			if ($childNode instanceof \DOMElement) {
+				$this->walkDOM($childNode, $document);
+			} elseif ($childNode instanceof \DOMComment) {
+				$this->removeNode($childNode);
+			}
+		}
+
+		if(!$isContainerElement) {
+			$this->parseElement($element, $document);
+		}
+
+		if ($childNodes->length <= 0 && is_callable($handler = $this->config->getEmptyElementHandler())) {
+			$handler($element);
+		}
+	}
+
+	private function parseElement(\DOMElement $element, \DOMDocument $document)
+	{
+		$nodeSettings = $this->config->getNodeSettings($element->tagName);
+
+		try {
+			switch ($nodeSettings['mode']) {
+				case SanitizationConfig::ELEMENT_ALLOW:
+					$this->parseAttributes($element);
+					break;
+				case SanitizationConfig::ELEMENT_STRIP:
+					self::replaceNode(
+						$element,
+						$document->createDocumentFragment()
+					);
+					continue;
+				case SanitizationConfig::ELEMENT_REMOVE:
+					$this->removeNode($element);
+					continue;
+				case SanitizationConfig::ELEMENT_CUSTOM:
+					$result = $nodeSettings['handler'](
+						$element,
+						function (\DOMAttr $attribute, \DOMElement $element) {
+							$this->parseAttribute($attribute, $element);
+						}
+					);
+
+					if ($result === false) {
+						$this->removeNode($element);
+					}
+					break;
+			}
+		} catch (UnwantedElementException $exception) {
+			$this->removeNode($element);
+		}
+	}
+
+
+	private function parseAttributes(\DOMElement $element)
+	{
+		$attributes = $element->attributes;
+
+		/** @var \DOMAttr $attribute */
+		for ($i = $attributes->length; --$i >= 0; ) {
+			$attribute = $attributes->item($i);
+			$this->parseAttribute($attribute, $element);
+		}
+	}
+
+	private function parseAttribute(\DOMAttr $attribute, \DOMElement $element)
+	{
+		$value = $this->transformPlaceholdersToEntities(trim($attribute->value));
+
+		$evaluator = $this->config->getAttributeEvaluator($attribute->name, $element->tagName);
+		$result = $evaluator($value);
+
+		if ($result === false) {
+			$element->removeAttribute($attribute->name);
+		} else if($result !== $value) {
+			@$attribute->value = $result;
+		}
+	}
+
+	private static function replaceNode(\DOMNode $oldNode, \DOMNode $newNode)
+	{
+		$childNodes = $oldNode->childNodes;
+
+		while($childNodes->length) {
+			$newNode->appendChild($childNodes->item(0));
+		}
+
+		$oldNode->parentNode->replaceChild($newNode, $oldNode);
+	}
+
+	private function removeNode(\DOMNode $node)
+	{
+		if ($node->parentNode) {
+			$node->parentNode->removeChild($node);
+		}
+	}
+
+	private function transformEntitiesToPlaceholders(string $contents): string
+	{
+		$entitiesMap = $this->config->getEntitiesMap();
+
+		return str_replace(array_keys($entitiesMap), array_values($entitiesMap), $contents);
+	}
+
+	private function transformPlaceholdersToEntities(string $contents): string
+	{
+		$entitiesMap = $this->config->getEntitiesMap();
+
+		return str_replace(array_values($entitiesMap), array_keys($entitiesMap), $contents);
+	}
+}
