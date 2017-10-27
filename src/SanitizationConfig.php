@@ -2,6 +2,8 @@
 
 namespace Syslogic\Sanny;
 
+use Syslogic\Sanny\Exception\InvalidArgumentException;
+
 final class SanitizationConfig
 {
 	const ELEMENT_ALLOW = "allow";
@@ -16,8 +18,9 @@ final class SanitizationConfig
 		"&quot;" => "{{@quot;}}",
 	];
 
-	private $nodeSettings = [];
+	private $elementSettings = [];
 	private $attributeSettings = [];
+	private $elementCallbacks = [];
 
 	/** @var callable */
 	private $emptyElementHandler;
@@ -41,7 +44,31 @@ final class SanitizationConfig
 
 	public function addElement(string $tagName, string $mode = self::ELEMENT_ALLOW, callable $customHandler = null)
 	{
-		$this->nodeSettings[$tagName] = ["mode" => $mode, "handler" => $customHandler];
+		$this->elementSettings[$tagName] = ["mode" => $mode, "handler" => $customHandler];
+	}
+
+	public function addElementCallback(string $tagName, callable $callback)
+	{
+		if (isset($this->elementSettings[$tagName]) === false) {
+			throw new InvalidArgumentException(
+				sprintf("Cannot add callback to element '%s' which is not added to the configuration", $tagName)
+			);
+		} elseif ($this->elementSettings[$tagName]['mode'] !== self::ELEMENT_ALLOW) {
+			throw new InvalidArgumentException(
+				sprintf("Cannot add callback to element '%s' which is not set to mode 'allow'", $tagName)
+			);
+		}
+
+		if (isset($this->elementCallbacks[$tagName]) === false) {
+			$this->elementCallbacks[$tagName] = [];
+		}
+
+		$this->elementCallbacks[$tagName][] = $callback;
+	}
+
+	public function getElementCallbacks(string $tagName): array
+	{
+		return (isset($this->elementCallbacks[$tagName]) === true) ? $this->elementCallbacks[$tagName] : [];
 	}
 
 	public function addAttribute(string $attributeName, callable $evaluator, array $onlyOnElements = [])
@@ -49,11 +76,11 @@ final class SanitizationConfig
 		$this->attributeSettings[$attributeName] = [$evaluator, $onlyOnElements];
 	}
 
-	public function getNodeSettings(string $tagName): array
+	public function getElementSettings(string $tagName): array
 	{
-		return isset($this->nodeSettings[$tagName]) === true
-			? $this->nodeSettings[$tagName]
-			: $this->nodeSettings[self::DEFAULT_KEY];
+		return isset($this->elementSettings[$tagName]) === true
+			? $this->elementSettings[$tagName]
+			: $this->elementSettings[self::DEFAULT_KEY];
 	}
 
 	public function getAttributeEvaluator(string $attributeName, string $tagName): callable
