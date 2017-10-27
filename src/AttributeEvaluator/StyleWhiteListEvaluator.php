@@ -27,7 +27,7 @@ class StyleWhiteListEvaluator implements AttributeEvaluatorInterface
 
 	public function __invoke(string $value)
 	{
-		if(isset($this->cache[$value]) === true) {
+		if (isset($this->cache[$value]) === true) {
 			return $this->cache[$value];
 		}
 
@@ -58,7 +58,7 @@ class StyleWhiteListEvaluator implements AttributeEvaluatorInterface
 
 		$allowedRules = [];
 		foreach ($rules as $rule) {
-			if($this->ruleIsAllowed($rule) === true) {
+			if ($this->ruleIsAllowed($rule) === true) {
 				$allowedRules[] = $rule->render(self::getOutputFormat());
 			}
 		}
@@ -73,11 +73,11 @@ class StyleWhiteListEvaluator implements AttributeEvaluatorInterface
 		$ruleString = $rule->getRule();
 
 		$whiteListed = false;
-		foreach($this->rulesWhitelist as $item) {
+		foreach ($this->rulesWhitelist as $item) {
 
-			if($item === $ruleString) {
+			if ($item === $ruleString) {
 				$whiteListed = true;
-			} else if("*" === substr($item, -1) && strpos($ruleString, substr($item, 0, -1)) === 0) {
+			} elseif ("*" === substr($item, -1) && strpos($ruleString, substr($item, 0, -1)) === 0) {
 				$whiteListed = true;
 			}
 		}
@@ -94,7 +94,8 @@ class StyleWhiteListEvaluator implements AttributeEvaluatorInterface
 		return self::$outputFormat;
 	}
 
-	public function addCallback(callable $callback) {
+	public function addCallback(callable $callback)
+	{
 		$this->callbacks[] = $callback;
 	}
 }

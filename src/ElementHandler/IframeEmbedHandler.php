@@ -9,12 +9,16 @@ class IframeEmbedHandler extends AbstractElementHandler implements ElementHandle
 	/** @var UriEvaluator */
 	private $uriEvaluator;
 
-	private $allowedRegex;
+	private $allowedHostsMap;
 
-	public function __construct(UriEvaluator $uriEvaluator, string $allowedRegex)
+	/**
+	 * @param UriEvaluator $uriEvaluator
+	 * @param array $allowedHostsMap Key-value map with host as key and regex or `true` as value.
+	 */
+	public function __construct(UriEvaluator $uriEvaluator, array $allowedHostsMap)
 	{
 		$this->uriEvaluator = $uriEvaluator;
-		$this->allowedRegex = $allowedRegex;
+		$this->allowedHostsMap = $allowedHostsMap;
 	}
 
 	public function __invoke(\DOMElement $element, callable $attributeParser)
@@ -27,11 +31,18 @@ class IframeEmbedHandler extends AbstractElementHandler implements ElementHandle
 		$src = $srcAttr->nodeValue;
 		$uriEvaluator = $this->uriEvaluator;
 
-		if(($src = $uriEvaluator($src)) === false) {
+		if (($src = $uriEvaluator($src)) === false) {
 			return false;
 		}
 
-		if(!preg_match($this->allowedRegex, $src)) {
+		$uriParser = $uriEvaluator->getUriParser();
+		$components = $uriParser($src);
+
+		if (isset($this->allowedHostsMap[$components['host']]) === false) {
+			return false;
+		} elseif (is_string($regex = $this->allowedHostsMap[$components['host']]) === true
+			&& !preg_match($regex, $src)
+		) {
 			return false;
 		}
 
