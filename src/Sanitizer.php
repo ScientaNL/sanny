@@ -85,15 +85,20 @@ class Sanitizer
 
 	private function parseElement(\DOMElement $element, \DOMDocument $document)
 	{
-		$nodeSettings = $this->config->getNodeSettings($element->tagName);
+		$tagName = $element->tagName;
+		$elementSettings = $this->config->getElementSettings($tagName);
 
 		try {
-			switch ($nodeSettings['mode']) {
+			switch ($elementSettings['mode']) {
 				case SanitizationConfig::ELEMENT_ALLOW:
 					$this->parseAttributes($element);
+
+					foreach ($this->config->getElementCallbacks($tagName) as $callback) {
+						$callback($element);
+					}
 					break;
 				case SanitizationConfig::ELEMENT_STRIP:
-					self::replaceNode(
+					$this->replaceNode(
 						$element,
 						$document->createDocumentFragment()
 					);
@@ -102,7 +107,7 @@ class Sanitizer
 					$this->removeNode($element);
 					continue;
 				case SanitizationConfig::ELEMENT_CUSTOM:
-					$result = $nodeSettings['handler'](
+					$result = $elementSettings['handler'](
 						$element,
 						function (\DOMAttr $attribute, \DOMElement $element) {
 							$this->parseAttribute($attribute, $element);
@@ -145,7 +150,7 @@ class Sanitizer
 		}
 	}
 
-	private static function replaceNode(\DOMNode $oldNode, \DOMNode $newNode)
+	private function replaceNode(\DOMNode $oldNode, \DOMNode $newNode)
 	{
 		$childNodes = $oldNode->childNodes;
 
