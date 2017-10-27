@@ -29,7 +29,7 @@ final class SanitizationConfig
 		//Default behaviour
 		$this->addElement(self::DEFAULT_KEY, $defaultElementMode);
 
-		if($whitelistAttributes === true) {
+		if ($whitelistAttributes === true) {
 			$this->addAttribute(
 				self::DEFAULT_KEY,
 				function () {

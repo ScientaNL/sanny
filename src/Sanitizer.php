@@ -25,7 +25,7 @@ class Sanitizer
 		$contents = str_replace(["<o:p>", "</o:p>"], ["<span>", "</span>"], $contents);
 
 		$document = new \DomDocument('1.0', 'UTF-8');
-		$document->substituteEntities  = false;
+		$document->substituteEntities = false;
 		@$document->loadHTML(
 			'<?xml encoding="UTF-8"><html><body><section>'.$contents.'</section></body></html>'
 		);
@@ -45,19 +45,21 @@ class Sanitizer
 
 		$contents = $this->transformPlaceholdersToEntities($contents);
 
-		$formatter = new Formatter([
-			"indent" => $this->config->getIndent() ? "auto" : false,
-			"quiet" => true,
-			"output-xhtml" => true,
-			"preserve-entities" => true,
-			"vertical-space" => false,
-			"show-body-only" => true,
-			"wrap" => false,
-		]);
+		$formatter = new Formatter(
+			[
+				"indent" => $this->config->getIndent() ? "auto" : false,
+				"quiet" => true,
+				"output-xhtml" => true,
+				"preserve-entities" => true,
+				"vertical-space" => false,
+				"show-body-only" => true,
+				"wrap" => false,
+			]
+		);
 
 		return $formatter->format($contents);
-
 	}
+
 	private function walkDOM(\DOMElement $element, \DOMDocument $document, int $depth = 0)
 	{
 		$childNodes = $element->childNodes;
@@ -66,13 +68,13 @@ class Sanitizer
 			$childNode = $childNodes->item($i);
 
 			if ($childNode instanceof \DOMElement) {
-				$this->walkDOM($childNode, $document, $depth+1);
+				$this->walkDOM($childNode, $document, $depth + 1);
 			} elseif ($childNode instanceof \DOMComment) {
 				$this->removeNode($childNode);
 			}
 		}
 
-		if($depth > 0) {
+		if ($depth > 0) {
 			$this->parseElement($element, $document);
 		}
 
@@ -123,7 +125,7 @@ class Sanitizer
 		$attributes = $element->attributes;
 
 		/** @var \DOMAttr $attribute */
-		for ($i = $attributes->length; --$i >= 0; ) {
+		for ($i = $attributes->length; --$i >= 0;) {
 			$attribute = $attributes->item($i);
 			$this->parseAttribute($attribute, $element);
 		}
@@ -138,7 +140,7 @@ class Sanitizer
 
 		if ($result === false) {
 			$element->removeAttribute($attribute->name);
-		} else if($result !== $value) {
+		} elseif ($result !== $value) {
 			@$attribute->value = $result;
 		}
 	}
@@ -147,7 +149,7 @@ class Sanitizer
 	{
 		$childNodes = $oldNode->childNodes;
 
-		while($childNodes->length) {
+		while ($childNodes->length) {
 			$newNode->appendChild($childNodes->item(0));
 		}
 

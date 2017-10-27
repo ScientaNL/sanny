@@ -8,15 +8,19 @@ use Psr\Http\Message\UriInterface;
 
 class UriEvaluator implements AttributeEvaluatorInterface
 {
+	/** @var UriParser */
+	private $uriParser;
 	private $allowedSchemeStrategies;
 
 	const RELATIVE_URI = null;
 
 	public function __construct(array $allowedSchemeStrategies, string $relativeURISchemeStrategy = null)
 	{
-		if($relativeURISchemeStrategy) {
+		if ($relativeURISchemeStrategy) {
 			$allowedSchemeStrategies[self::RELATIVE_URI] = $relativeURISchemeStrategy;
 		}
+
+		$this->uriParser = new UriParser();
 
 		$this->allowedSchemeStrategies = $allowedSchemeStrategies;
 	}
@@ -24,7 +28,7 @@ class UriEvaluator implements AttributeEvaluatorInterface
 	public function __invoke(string $value)
 	{
 		try {
-			$uriParser = new UriParser();
+			$uriParser = $this->uriParser;
 			$uriComponents = $uriParser($value);
 
 			if (isset($this->allowedSchemeStrategies[$uriComponents['scheme']]) === false) {
@@ -42,5 +46,10 @@ class UriEvaluator implements AttributeEvaluatorInterface
 		} catch (\Exception $e) {
 			return false;
 		}
+	}
+
+	public function getUriParser(): UriParser
+	{
+		return $this->uriParser;
 	}
 }

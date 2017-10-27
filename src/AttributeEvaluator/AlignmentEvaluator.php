@@ -19,4 +19,5 @@ class AlignmentEvaluator extends EnumEvaluator
 		}
 
 		parent::__construct($allowedValues);
-	}}
+	}
+}
