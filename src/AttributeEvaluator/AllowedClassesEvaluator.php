@@ -13,8 +13,10 @@ class AllowedClassesEvaluator implements AttributeEvaluatorInterface
 
 	public function __invoke(string $value)
 	{
-		preg_match_all('/([a-z][a-z0-9_-]*?)\\b/i', $value, $matches, \PREG_PATTERN_ORDER);
-		$allowedClasses = array_intersect($matches[0], $this->allowedClasses);
+		$allowedClasses = array_intersect(
+			(array)preg_split('/\\s+/i', $value),
+			$this->allowedClasses
+		);
 
 		return (empty($allowedClasses) === false) ? implode(" ", $allowedClasses) : false;
 	}
