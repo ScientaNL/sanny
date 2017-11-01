@@ -27,6 +27,8 @@ class StyleWhiteListEvaluator implements AttributeEvaluatorInterface
 
 	public function __invoke(string $value)
 	{
+		$value = html_entity_decode($value);
+
 		if (isset($this->cache[$value]) === true) {
 			return $this->cache[$value];
 		}
