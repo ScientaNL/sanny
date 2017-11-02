@@ -33,41 +33,54 @@ class StyleWhiteListEvaluator implements AttributeEvaluatorInterface
 			return $this->cache[$value];
 		}
 
+		set_error_handler(
+			function (int $errno, string $errstr) {
+				throw new \Error($errstr, $errno);
+			}
+		);
+
+		/**
+		 * @todo Sabberworm's CSS parser outputs notices. Re-evaluate this dependency
+		 */
 		try {
 			$parser = new Parser("containert { $value }");
 			$css = $parser->parse();
 
+			$ruleSets = $css->getAllRuleSets();
+
+			if (count($ruleSets) !== 1) {
+				return $this->cache[$value] = false;
+			}
+
+			/**
+			 * @var DeclarationBlock[] $ruleSets
+			 * @var Rule[] $rules
+			 */
+			$rules = $ruleSets[0]->getRulesAssoc();
+
+			//Call callbacks
+			foreach ($this->callbacks as $callback) {
+				$callback($rules);
+			}
+
+			$allowedRules = [];
+			foreach ($rules as $rule) {
+				if ($this->ruleIsAllowed($rule) === true) {
+					$allowedRules[] = $rule->render(self::getOutputFormat());
+				}
+			}
+
+			return $this->cache[$value] = (empty($allowedRules) === false)
+				? implode(" ", $allowedRules)
+				: false;
+
 		} catch (SourceException $e) {
 			return $this->cache[$value] = false;
-		}
-
-		$ruleSets = $css->getAllRuleSets();
-
-		if (count($ruleSets) !== 1) {
+		} catch (\Error $e) {
 			return $this->cache[$value] = false;
+		} finally {
+			restore_error_handler();
 		}
-
-		/**
-		 * @var DeclarationBlock[] $ruleSets
-		 * @var Rule[] $rules
-		 */
-		$rules = $ruleSets[0]->getRulesAssoc();
-
-		//Call callbacks
-		foreach ($this->callbacks as $callback) {
-			$callback($rules);
-		}
-
-		$allowedRules = [];
-		foreach ($rules as $rule) {
-			if ($this->ruleIsAllowed($rule) === true) {
-				$allowedRules[] = $rule->render(self::getOutputFormat());
-			}
-		}
-
-		return $this->cache[$value] = (empty($allowedRules) === false)
-			? implode(" ", $allowedRules)
-			: false;
 	}
 
 	private function ruleIsAllowed(Rule $rule)

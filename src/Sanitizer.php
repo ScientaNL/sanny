@@ -221,7 +221,7 @@ class Sanitizer
 			);
 
 			try {
-				@$attribute->value = $result;
+				$attribute->value = $result;
 			} catch (\Error $e) {
 				throw new AttributeInvalidValueException(
 					sprintf(
