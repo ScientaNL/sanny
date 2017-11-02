@@ -3,7 +3,6 @@
 namespace Syslogic\Sanny;
 
 use Syslogic\Sanny\Exception\AttributeInvalidValueException;
-use Syslogic\Sanny\Exception\InvalidArgumentException;
 use Syslogic\Sanny\Exception\UnwantedElementException;
 use Syslogic\Sanny\PostprocessDOMHandler\PostProcessDOMHandlerInterface;
 use Syslogic\Sanny\PreProcessHtmlHandler\PreProcessHtmlHandlerInterface;
@@ -30,13 +29,21 @@ class Sanitizer
 
 		$document = new \DomDocument('1.0', 'UTF-8');
 		$document->substituteEntities = false;
-		$document->preserveWhiteSpace = true;
-		$document->formatOutput = true;
+		$document->preserveWhiteSpace = false;
+		$document->formatOutput = false;
 
 		@$document->loadHTML(
 			'<?xml encoding="UTF-8"><html><body>'.$contents.'</body></html>'
 		);
 
+
+		/**
+		 * Remove comments and normalize documents, merging textnodes surrounding comments.
+		 *
+		 * Comments are removed a priori, walking the DOM backwards which is not normalized and comment-free
+		 * results in too much trimming artifacts.
+		 */
+		$this->removeComments($document);
 		$document->normalizeDocument();
 
 		$this->walkDOM($rootElement = $document->getElementsByTagName("body")->item(0), $document);
@@ -64,8 +71,6 @@ class Sanitizer
 
 			if ($childNode instanceof \DOMElement) {
 				$this->walkDOM($childNode, $document, $depth + 1);
-			} elseif ($childNode instanceof \DOMComment) {
-				$this->removeNode($childNode);
 			} elseif ($childNode instanceof \DOMText) {
 				$this->stripUnwantedCharacters($childNode);
 				$this->stripIndentation($childNode);
@@ -74,11 +79,14 @@ class Sanitizer
 
 		if ($depth > 0) {
 			$this->parseElement($element, $document);
-			$this->indentDOMNode($element, $document, $depth);
 		}
 
 		if ($childNodes->length <= 0 && is_callable($handler = $this->config->getEmptyElementHandler())) {
 			$handler($element);
+		}
+
+		if ($depth > 0 && $element->parentNode) {
+			$this->indentDOMNode($element, $document, $depth);
 		}
 	}
 
@@ -150,11 +158,8 @@ class Sanitizer
 			) {
 				/**
 				 * Due to all manipulations, two DOMTexts could be adjectent to each other, don't trim in that case.
-				 * It could also be that the previous sibbling is a DOMComment which will be removed, so don't trim.
 				 */
-				if ($previousSibling instanceof \DOMText === false
-					&& $previousSibling instanceof \DOMComment === false
-				) {
+				if ($previousSibling instanceof \DOMText === false) {
 					$value = ltrim($originalValue = $value);
 				}
 			}
@@ -163,10 +168,20 @@ class Sanitizer
 			if (($nextSibling = $textNode->nextSibling) === null
 				|| in_array($nextSibling->nodeName, $this->config->getInlineElements()) === false
 			) {
-				// See above
-				if ($nextSibling instanceof \DOMText === false
-					&& $nextSibling instanceof \DOMComment === false
+				/**
+				 * Only when the next sibling *element* is an inline element, the trailing space has meaning.
+				 * If the next sibling element is not an inline element, trim it. Otherwise, keep a possible
+				 * trailing space.
+				 *
+				 * In this case, the nextSibling is DOM text, so look one sibling further to the next's sibling of the
+				 * next sibling.
+				 */
+				if ($nextSibling instanceof \DOMText === true
+					&& ($nextsNextSibling = $nextSibling->nextSibling) instanceof \DOMElement === true
+					&& in_array($nextsNextSibling->nodeName, $this->config->getInlineElements()) === false
 				) {
+					$value = rtrim($value);
+				} elseif ($nextSibling instanceof \DOMText === false) {
 					$value = rtrim($value);
 				}
 			}
@@ -267,7 +282,7 @@ class Sanitizer
 			$indentNode = false;
 			$indentChildren = true;
 		} elseif (in_array($node->nodeName, $this->config->getInlineElements())) {
-			$indentNode = $depth <= 1;
+			$indentNode = $depth <= 0;
 			$indentChildren = true;
 		} elseif (in_array($node->nodeName, $this->config->getPreformattedElements()) === true) {
 			$indentNode = true;
@@ -340,6 +355,15 @@ class Sanitizer
 		 */
 		foreach ($this->config->getPostProcessDOMHandlers() as $handler) {
 			$handler($rootElement, $document);
+		}
+	}
+
+	private function removeComments($document)
+	{
+		$xpath = new \DOMXPath($document);
+		$comments = $xpath->query("//comment()");
+		for ($i = $comments->length; --$i >= 0;) {
+			$this->removeNode($comments->item($i));
 		}
 	}
 }
