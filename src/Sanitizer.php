@@ -9,8 +9,6 @@ use Syslogic\Sanny\PreProcessHtmlHandler\PreProcessHtmlHandlerInterface;
 
 class Sanitizer
 {
-	public static $dinges = [];
-
 	/** @var SanitizationConfig */
 	private $config;
 
@@ -35,7 +33,6 @@ class Sanitizer
 		@$document->loadHTML(
 			'<?xml encoding="UTF-8"><html><body>'.$contents.'</body></html>'
 		);
-
 
 		/**
 		 * Remove comments and normalize documents, merging textnodes surrounding comments.
