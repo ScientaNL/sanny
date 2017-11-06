@@ -16,7 +16,10 @@ class ImageData extends Data
 
 		list($header, $data) = $parts;
 
-		if (count($dataHeaderParts = explode(';', $header, 2)) !== 2) {
+		//@todo Weird case with an image of 1.2MB, resulting in a broken DOM Document. Needs checking
+		if(strlen($data) > 512000) {
+			return false;
+		} else if (count($dataHeaderParts = explode(';', $header, 2)) !== 2) {
 			return false;
 		}
 
