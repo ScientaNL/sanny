@@ -43,6 +43,7 @@ class UriEvaluator implements AttributeEvaluatorInterface
 
 			if (isset($this->allowedSchemeStrategies[$uriComponents['scheme']]) === false) {
 
+				//Auto-correct a windows file path
 				if (preg_match('%^\\b[a-z]:\\\\[^/:*?"<>|\\r\\n]*$%i', $value)) {
 					return $this->__invoke($this->correctWindowsFilePath($value));
 				} else {
@@ -53,8 +54,16 @@ class UriEvaluator implements AttributeEvaluatorInterface
 			/**
 			 * Fix ampersands in the path component. PHP league will unescape them,
 			 * but DOMDocument does not like an unescaped value
+			 *
+			 * Check if it is not empty, otherwise a NULL value will be casted to an empty string.
 			 */
-			$uriComponents['path'] = str_replace(["&", "%26"], ["&amp;", "&amp;"], $uriComponents['path']);
+			if(empty($uriComponents['path']) === false) {
+				$uriComponents['path'] = str_replace(["&", "%26"], ["&amp;", "&amp;"], $uriComponents['path']);
+			}
+
+			if(empty($uriComponents['fragment']) === false) {
+				$uriComponents['fragment'] = str_replace(["&", "%26"], ["&amp;", "&amp;"], $uriComponents['fragment']);
+			}
 
 			/** @var UriInterface $uri */
 			$schemeClassName = $this->allowedSchemeStrategies[$uriComponents['scheme']];
