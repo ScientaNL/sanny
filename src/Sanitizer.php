@@ -109,7 +109,7 @@ class Sanitizer
 					break;
 				case SanitizationConfig::ELEMENT_REMOVE:
 					$this->removeNode($element);
-					continue;
+					break;
 				case SanitizationConfig::ELEMENT_CUSTOM:
 					$result = $elementSettings['handler'](
 						$element,
