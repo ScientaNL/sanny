@@ -106,7 +106,7 @@ class Sanitizer
 						$element,
 						$document->createDocumentFragment()
 					);
-					continue;
+					break;
 				case SanitizationConfig::ELEMENT_REMOVE:
 					$this->removeNode($element);
 					continue;

@@ -1,23 +1,24 @@
 {
-  "name": "syslogic/sanny",
-  "type": "library",
-  "description": "Sanny - PHP DOM-based HTML sanitization",
-  "keywords": [],
-  "license": "MIT",
-  "authors": [
-	{
-	  "name": "Syslogic",
-	  "homepage": "https://www.syslogic.nl"
+	"name": "syslogic/sanny",
+	"type": "library",
+	"description": "Sanny - PHP DOM-based HTML sanitization",
+	"keywords": [],
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Syslogic",
+			"homepage": "https://www.syslogic.nl"
+		}
+	],
+	"require": {
+		"php": ">=7.0.0",
+		"league/uri": "^5.0",
+		"sabberworm/php-css-parser": "^8.1",
+		"ext-dom": "*"
+	},
+	"autoload": {
+		"psr-4": {
+			"Syslogic\\Sanny\\": "src/"
+		}
 	}
-  ],
-  "require": {
-	"php": ">=7.0.0",
-	"league/uri": "^5.0",
-    "sabberworm/php-css-parser": "^8.1"
-  },
-  "autoload": {
-	"psr-4": {
-	  "Syslogic\\Sanny\\" : "src/"
-	}
-  }
 }
