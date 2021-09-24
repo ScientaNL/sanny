@@ -1,6 +1,6 @@
 <?php
 
-namespace Syslogic\Sanny\PreProcessHtmlHandler;
+namespace Scienta\Sanny\PreProcessHtmlHandler;
 
 /**
  * PHP's DOMDocument strips a single whitespace in several phrasing content elements.

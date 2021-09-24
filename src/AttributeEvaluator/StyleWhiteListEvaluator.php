@@ -1,6 +1,6 @@
 <?php
 
-namespace Syslogic\Sanny\AttributeEvaluator;
+namespace Scienta\Sanny\AttributeEvaluator;
 
 use Sabberworm\CSS\OutputFormat;
 use Sabberworm\CSS\Parser;
@@ -33,6 +33,11 @@ class StyleWhiteListEvaluator implements AttributeEvaluatorInterface
 			return $this->cache[$value];
 		}
 
+		/**
+		 * Mask asserts called with string argument
+		 *
+		 * @psalm-suppress InvalidArgument
+		 */
 		set_error_handler(
 			function (int $errno, string $errstr) {
 				throw new \Error($errstr, $errno);

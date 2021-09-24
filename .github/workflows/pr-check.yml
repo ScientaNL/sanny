@@ -1,0 +1,50 @@
+name: Pull request
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+jobs:
+  check-psalm:
+    name: Psalm
+    runs-on: ubuntu-latest
+    needs: check-changes
+    if: ${{needs.check-changes.outputs.php-no-deletions}}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 100
+
+      - name: Add php extensions
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "7.4"
+          tools: pecl, composer
+          extensions: apcu, exif, gd, imagick, intl, pcntl, pdo_mysql, redis, sockets, xsl, zip
+
+      - name: Install php packages
+        run: composer install
+    
+      - name: Run Psalm on changes
+        run: ./vendor/bin/psalm
+
+  check-phpunit:
+    name: Phpunit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 100
+    
+      - name: Add php extensions
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "7.4"
+          tools: pecl, composer
+          extensions: apcu, exif, gd, imagick, intl, pcntl, pdo_mysql, redis, sockets, xsl, zip
+
+      - name: Install php packages
+        run: composer install
+
+      - name: Run Phpunit
+        run: ./vendor/bin/phpunit

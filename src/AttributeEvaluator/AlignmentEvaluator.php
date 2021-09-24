@@ -1,6 +1,6 @@
 <?php
 
-namespace Syslogic\Sanny\AttributeEvaluator;
+namespace Scienta\Sanny\AttributeEvaluator;
 
 class AlignmentEvaluator extends EnumEvaluator
 {

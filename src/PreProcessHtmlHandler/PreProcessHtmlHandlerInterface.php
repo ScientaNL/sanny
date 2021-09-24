@@ -1,6 +1,6 @@
 <?php
 
-namespace Syslogic\Sanny\PreProcessHtmlHandler;
+namespace Scienta\Sanny\PreProcessHtmlHandler;
 
 interface PreProcessHtmlHandlerInterface
 {

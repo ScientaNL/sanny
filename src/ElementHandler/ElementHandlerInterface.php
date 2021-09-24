@@ -1,6 +1,6 @@
 <?php
 
-namespace Syslogic\Sanny\ElementHandler;
+namespace Scienta\Sanny\ElementHandler;
 
 interface ElementHandlerInterface
 {
@@ -11,7 +11,7 @@ interface ElementHandlerInterface
 	 * @param callable $attributeParser Handle to the attribute parser. The signature is:
 	 *      $attributeParser(\DOMAttr $attribute, \DOMElement $element);
 	 *
-	 * @return false to let the element be removed of the DOM
+	 * @return false|void
 	 */
 	public function __invoke(\DOMElement $element, callable $attributeParser);
 }

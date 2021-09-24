@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.5/phpunit.xsd"
+	executionOrder="depends,defects"
+	forceCoversAnnotation="true"
+	beStrictAboutCoversAnnotation="false"
+	beStrictAboutOutputDuringTests="true"
+	beStrictAboutTodoAnnotatedTests="true"
+	failOnRisky="true"
+	failOnWarning="true"
+	verbose="true"
+	colors="true"
+	printerClass="Codedungeon\PHPUnitPrettyResultPrinter\Printer"
+>
+	<php>
+		<ini name="error_reporting" value="-1"/>
+		<env name="MIGRATION_MYSQL_HOST" value="mysql"/>
+		<env name="MIGRATION_MYSQL_USER" value="db_manager"/>
+		<env name="MIGRATION_MYSQL_PASSWORD" value="db_manager"/>
+	</php>
+
+	<testsuites>
+		<testsuite name="unit">
+			<directory suffix="Test.php">./tests</directory>
+		</testsuite>
+	</testsuites>
+
+	<coverage>
+		<include>
+			<directory suffix=".php">src</directory>
+		</include>
+	</coverage>
+</phpunit>

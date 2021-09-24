@@ -1,3 +1,8 @@
 .idea
 playground
 vendor
+*.DS_Store
+*.idea
+*.phan
+.env
+.phpunit.result.cache
