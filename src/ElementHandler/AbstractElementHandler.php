@@ -1,6 +1,6 @@
 <?php
 
-namespace Syslogic\Sanny\ElementHandler;
+namespace Scienta\Sanny\ElementHandler;
 
 abstract class AbstractElementHandler implements ElementHandlerInterface
 {
@@ -18,5 +18,12 @@ abstract class AbstractElementHandler implements ElementHandlerInterface
 				$attributeParser($attribute, $element);
 			}
 		}
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function __invoke(\DOMElement $element, callable $attributeParser)
+	{
 	}
 }

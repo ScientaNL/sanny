@@ -1,6 +1,6 @@
 <?php
 
-namespace Syslogic\Sanny\PreProcessHtmlHandler;
+namespace Scienta\Sanny\PreProcessHtmlHandler;
 
 /**
  * A common mistake seen in WYSIWYG editors is a paragraph in a heading. This is no problem for the browser,

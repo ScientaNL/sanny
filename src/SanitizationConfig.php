@@ -1,8 +1,8 @@
 <?php
 
-namespace Syslogic\Sanny;
+namespace Scienta\Sanny;
 
-use Syslogic\Sanny\Exception\InvalidArgumentException;
+use Scienta\Sanny\Exception\InvalidArgumentException;
 
 final class SanitizationConfig
 {

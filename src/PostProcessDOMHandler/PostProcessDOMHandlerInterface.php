@@ -1,6 +1,6 @@
 <?php
 
-namespace Syslogic\Sanny\PostprocessDOMHandler;
+namespace Scienta\Sanny\PostprocessDOMHandler;
 
 interface PostProcessDOMHandlerInterface
 {

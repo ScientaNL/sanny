@@ -1,6 +1,6 @@
 <?php
 
-namespace Syslogic\Sanny\PreProcessHtmlHandler;
+namespace Scienta\Sanny\PreProcessHtmlHandler;
 
 /**
  * Stub processing HTML pasted from Microsoft Word

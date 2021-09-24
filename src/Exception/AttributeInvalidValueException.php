@@ -1,6 +1,6 @@
 <?php
 
-namespace Syslogic\Sanny\Exception;
+namespace Scienta\Sanny\Exception;
 
 class AttributeInvalidValueException extends \RuntimeException
 {

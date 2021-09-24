@@ -1,32 +1,26 @@
 <?php
 
-namespace Syslogic\Sanny\AttributeEvaluator;
+namespace Scienta\Sanny\AttributeEvaluator;
 
-use League\Uri\Modifiers\Formatter;
-use League\Uri\Parser as UriParser;
-use Psr\Http\Message\UriInterface;
+use League\Uri\Http;
+use Scienta\Sanny\Exception\InvalidArgumentException;
+use Scienta\Sanny\UriSchemeValidator\UriSchemeValidatorInterface;
 
 class UriEvaluator implements AttributeEvaluatorInterface
 {
-	/** @var UriParser */
-	private $uriParser;
-	private $allowedSchemeStrategies;
-	private $autoCorrectWindowsFilePaths = false;
+	private array $allowedSchemeStrategies;
+	private bool $autoCorrectWindowsFilePaths;
 
-	const RELATIVE_URI = null;
+	const SCHEMELESS_URI = "SCHEMELESS_URI";
 
+	/**
+	 * @param array<string, UriSchemeValidatorInterface|true> $allowedSchemeStrategies
+	 * @param bool $autoCorrectWindowsFilePaths
+	 */
 	public function __construct(
 		array $allowedSchemeStrategies,
-		string $relativeURISchemeStrategy = null,
 		bool $autoCorrectWindowsFilePaths = false
-	)
-	{
-		if ($relativeURISchemeStrategy) {
-			$allowedSchemeStrategies[self::RELATIVE_URI] = $relativeURISchemeStrategy;
-		}
-
-		$this->uriParser = new UriParser();
-
+	) {
 		$this->allowedSchemeStrategies = $allowedSchemeStrategies;
 		$this->autoCorrectWindowsFilePaths = $autoCorrectWindowsFilePaths;
 	}
@@ -34,57 +28,39 @@ class UriEvaluator implements AttributeEvaluatorInterface
 	public function __invoke(string $value)
 	{
 		try {
-			$uriParser = $this->uriParser;
-			$uriComponents = $uriParser($value);
+			$uri = Http::createFromString($value);
 
-			// Input could be uppercase, so cast it to lower
-			$uriComponents['scheme'] = (is_string($uriComponents['scheme']) === true)
-				? strtolower($uriComponents['scheme']) : $uriComponents['scheme'];
-
-			if (isset($this->allowedSchemeStrategies[$uriComponents['scheme']]) === false) {
-
-				//Auto-correct a windows file path
-				if (preg_match('%^\\b[a-z]:\\\\[^/:*?"<>|\\r\\n]*$%i', $value)) {
-					return $this->__invoke($this->correctWindowsFilePath($value));
+			if ($uri->getScheme()) {
+				if(!isset($this->allowedSchemeStrategies[$uri->getScheme()])) {
+					//Auto-correct a Windows file path
+					if ($this->autoCorrectWindowsFilePaths && preg_match('%^\\b[a-z]:\\\\[^/:*?"<>|\\r\\n]*$%i', $value)) {
+						return $this->__invoke(UriEvaluator::correctWindowsFilePath($value));
+					} else {
+						return false;
+					}
 				} else {
-					return false;
+					$schemeValidator = $this->allowedSchemeStrategies[$uri->getScheme()];
 				}
+			} else {
+				$schemeValidator = $this->allowedSchemeStrategies[self::SCHEMELESS_URI] ?? false;
 			}
 
-			/**
-			 * Fix ampersands in the path component. PHP league will unescape them,
-			 * but DOMDocument does not like an unescaped value
-			 *
-			 * Check if it is not empty, otherwise a NULL value will be casted to an empty string.
-			 */
-			if(empty($uriComponents['path']) === false) {
-				$uriComponents['path'] = str_replace(["&", "%26"], ["&amp;", "&amp;"], $uriComponents['path']);
+			if (!is_bool($schemeValidator) && !($schemeValidator instanceof UriSchemeValidatorInterface)) {
+				throw new InvalidArgumentException("Invalid scheme definition provided");
+			} elseif (!$schemeValidator
+				|| ($schemeValidator instanceof UriSchemeValidatorInterface && !$schemeValidator->isValidUri($uri))
+			) {
+				return false;
 			}
 
-			if(empty($uriComponents['fragment']) === false) {
-				$uriComponents['fragment'] = str_replace(["&", "%26"], ["&amp;", "&amp;"], $uriComponents['fragment']);
-			}
-
-			/** @var UriInterface $uri */
-			$schemeClassName = $this->allowedSchemeStrategies[$uriComponents['scheme']];
-			$uri = $schemeClassName::createFromComponents($uriComponents);
-
-			$formatter = new Formatter();
-			$formatter->setQuerySeparator('&amp;');
-
-			return $formatter($uri);
+			return str_replace(["&", "%26"], ["&amp;", "&amp;"], (string) $uri);
 		} catch (\Exception $e) {
 			return false;
 		}
 	}
 
-	public function getUriParser(): UriParser
+	private static function correctWindowsFilePath(string $value): string
 	{
-		return $this->uriParser;
-	}
-
-	private function correctWindowsFilePath(string $value): string
-	{
-		return "file:///".str_replace("\\", "/", $value);
+		return "file:///" . str_replace("\\", "/", $value);
 	}
 }

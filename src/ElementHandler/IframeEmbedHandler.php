@@ -1,8 +1,10 @@
 <?php
 
-namespace Syslogic\Sanny\ElementHandler;
+namespace Scienta\Sanny\ElementHandler;
 
-use Syslogic\Sanny\AttributeEvaluator\UriEvaluator;
+use DOMElement;
+use League\Uri\Http;
+use Scienta\Sanny\AttributeEvaluator\UriEvaluator;
 
 class IframeEmbedHandler extends AbstractElementHandler implements ElementHandlerInterface
 {
@@ -21,7 +23,12 @@ class IframeEmbedHandler extends AbstractElementHandler implements ElementHandle
 		$this->allowedHostsMap = $allowedHostsMap;
 	}
 
-	public function __invoke(\DOMElement $element, callable $attributeParser)
+	/**
+	 * @param DOMElement $element
+	 * @param callable $attributeParser
+	 * @psalm-return false|void
+	 */
+	public function __invoke(DOMElement $element, callable $attributeParser)
 	{
 		if (!$element->attributes->getNamedItem("src")) {
 			return false;
@@ -35,12 +42,11 @@ class IframeEmbedHandler extends AbstractElementHandler implements ElementHandle
 			return false;
 		}
 
-		$uriParser = $uriEvaluator->getUriParser();
-		$components = $uriParser($src);
+		$uri = Http::createFromString($src);
 
-		if (isset($this->allowedHostsMap[$components['host']]) === false) {
+		if (!isset($this->allowedHostsMap[$uri->getHost()])) {
 			return false;
-		} elseif (is_string($regex = $this->allowedHostsMap[$components['host']]) === true
+		} elseif (is_string($regex = $this->allowedHostsMap[$uri->getHost()])
 			&& !preg_match($regex, $src)
 		) {
 			return false;

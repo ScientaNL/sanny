@@ -1,11 +1,11 @@
 <?php
 
-namespace Syslogic\Sanny;
+namespace Scienta\Sanny;
 
-use Syslogic\Sanny\Exception\AttributeInvalidValueException;
-use Syslogic\Sanny\Exception\UnwantedElementException;
-use Syslogic\Sanny\PostprocessDOMHandler\PostProcessDOMHandlerInterface;
-use Syslogic\Sanny\PreProcessHtmlHandler\PreProcessHtmlHandlerInterface;
+use Scienta\Sanny\Exception\AttributeInvalidValueException;
+use Scienta\Sanny\Exception\UnwantedElementException;
+use Scienta\Sanny\PostprocessDOMHandler\PostProcessDOMHandlerInterface;
+use Scienta\Sanny\PreProcessHtmlHandler\PreProcessHtmlHandlerInterface;
 
 class Sanitizer
 {
@@ -213,7 +213,11 @@ class Sanitizer
 			$element->removeAttribute($attribute->name);
 		} elseif ($result !== $value) {
 
-			//Malformed values will result in a PHP warning and an removed value. Throw an error to get more control
+			/**
+			 * Malformed values will result in a PHP warning and an removed value. Throw an error to get more control
+			 *
+			 * @psalm-suppress InvalidArgument
+			 */
 			set_error_handler(
 				function (int $errno, string $errstr) {
 					throw new \Error($errstr, $errno);
