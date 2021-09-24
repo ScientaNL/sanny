@@ -6,8 +6,6 @@ jobs:
   check-psalm:
     name: Psalm
     runs-on: ubuntu-latest
-    needs: check-changes
-    if: ${{needs.check-changes.outputs.php-no-deletions}}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
